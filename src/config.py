@@ -23,6 +23,7 @@ class PipelineConfig:
     min_request_delay: float = 1.0
     max_request_delay: float = 3.0
     spacy_model: str = "en_core_sci_md"
+    source_mode: str = "auto"
     enable_link_pruning: bool = True
     enable_word_pruning: bool = True
     output_dir: Path = Path("data")

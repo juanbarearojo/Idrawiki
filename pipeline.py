@@ -48,6 +48,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--min-node-freq", type=int, default=argparse.SUPPRESS)
     parser.add_argument("--min-edge-weight", type=int, default=argparse.SUPPRESS)
     parser.add_argument("--spacy-model", default=argparse.SUPPRESS)
+    parser.add_argument("--source-mode", choices=["auto", "api", "html"], default=argparse.SUPPRESS)
     parser.add_argument("--output-dir", default=argparse.SUPPRESS)
     parser.add_argument("--disable-link-pruning", action="store_true", default=argparse.SUPPRESS)
     parser.add_argument("--disable-word-pruning", action="store_true", default=argparse.SUPPRESS)
@@ -101,6 +102,7 @@ def main() -> None:
         print(f"Maximo de articulos: {config.max_articles}")
         print(f"Poda de enlaces: {'activa' if config.enable_link_pruning else 'desactivada'}")
         print(f"Poda de red textual: {'activa' if config.enable_word_pruning else 'desactivada'}")
+        print(f"Modo de obtencion: {config.source_mode}")
         print(f"Salida palabras: {config.words_output_dir}")
         print(f"Salida enlaces: {config.links_output_dir}\n")
 

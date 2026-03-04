@@ -28,6 +28,8 @@ class PipelineEntryPointTests(unittest.TestCase):
             "Medicina",
             "--max-articles",
             "20",
+            "--source-mode",
+            "api",
             "--disable-link-pruning",
         ]
 
@@ -37,6 +39,7 @@ class PipelineEntryPointTests(unittest.TestCase):
         self.assertEqual(args.base_url, "https://es.wikipedia.org")
         self.assertEqual(args.seed_article, "Medicina")
         self.assertEqual(args.max_articles, 20)
+        self.assertEqual(args.source_mode, "api")
         self.assertTrue(args.disable_link_pruning)
 
     def test_parse_args_accepts_config_path(self) -> None:
@@ -65,6 +68,7 @@ class PipelineEntryPointTests(unittest.TestCase):
             min_node_freq=2,
             min_edge_weight=2,
             spacy_model="custom_model",
+            source_mode="html",
             output_dir="custom_output",
             disable_link_pruning=True,
             disable_word_pruning=False,
@@ -79,6 +83,7 @@ class PipelineEntryPointTests(unittest.TestCase):
         self.assertFalse(config.enable_link_pruning)
         self.assertTrue(config.enable_word_pruning)
         self.assertEqual(config.spacy_model, "custom_model")
+        self.assertEqual(config.source_mode, "html")
 
     def test_build_config_loads_values_from_json_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -90,6 +95,7 @@ class PipelineEntryPointTests(unittest.TestCase):
                         "seed_article": "Biologia",
                         "max_articles": 12,
                         "enable_link_pruning": False,
+                        "source_mode": "api",
                         "output_dir": "custom_data"
                     }
                 ),
@@ -103,6 +109,7 @@ class PipelineEntryPointTests(unittest.TestCase):
         self.assertEqual(config.seed_article, "Biologia")
         self.assertEqual(config.max_articles, 12)
         self.assertFalse(config.enable_link_pruning)
+        self.assertEqual(config.source_mode, "api")
         self.assertEqual(config.output_dir, Path("custom_data"))
 
     def test_cli_values_override_config_file(self) -> None:

@@ -4,11 +4,19 @@ Herramienta para rastrear Wikipedia a partir de un articulo base y generar redes
 
 ![Hidra de Lerna](img/hidra-de-lerna.png)
 
-La idea del proyecto es sencilla: eliges un articulo inicial de Wikipedia, el pipeline recorre enlaces internos, limpia el texto, construye redes y exporta CSV que luego puedes visualizar.
+La idea del proyecto es sencilla: eliges un articulo inicial de wiki, el pipeline recorre enlaces internos, limpia el texto, construye redes y exporta CSV que luego puedes visualizar.
+
+Nota importante:
+
+- originalmente el proyecto estaba pensado para Wikipedia
+- para wikis externas no se puede garantizar compatibilidad total en todos los casos
+- se agradece mucho cualquier informacion reproducible sobre sitios que funcionen o fallen
+- tambien se agradecen PRs con mejoras para nuevos motores de wiki
 
 ## Que hace esta herramienta
 
 - permite elegir el nodo inicial de Wikipedia
+- permite elegir modo de obtencion de contenido: `auto`, `api` o `html`
 - permite activar o desactivar la poda
 - genera una red textual de palabras y bigramas
 - genera una red de enlaces entre articulos
@@ -146,6 +154,12 @@ La configuracion puede hacerse de dos maneras:
 
 Si usas ambas a la vez, la linea de comandos tiene prioridad sobre el archivo.
 
+Ademas puedes elegir el modo de obtencion con `--source-mode`:
+
+- `auto`: intenta API y si falla cae a HTML
+- `api`: usa solo MediaWiki API
+- `html`: usa solo scraping HTML
+
 Ejemplo minimo:
 
 ```bash
@@ -159,7 +173,7 @@ Eso arranca desde `https://en.wikipedia.org/wiki/Fentanyl`.
 Ejemplo equilibrado para una primera prueba:
 
 ```bash
-python pipeline.py --seed-article "Artificial intelligence" --max-articles 40 --max-depth 2 --min-link-freq 2 --edge-prune-percentile 35 --node-prune-percentile 10 --min-edge-weight 2 --min-node-freq 2
+python pipeline.py --seed-article "Artificial intelligence" --source-mode auto --max-articles 40 --max-depth 2 --min-link-freq 2 --edge-prune-percentile 35 --node-prune-percentile 10 --min-edge-weight 2 --min-node-freq 2
 ```
 
 ### Configuracion por archivo
@@ -180,6 +194,7 @@ Ejemplo de contenido:
   "seed_article": "Medicina",
   "max_articles": 30,
   "max_depth": 2,
+  "source_mode": "auto",
   "min_link_freq": 2,
   "enable_link_pruning": true,
   "enable_word_pruning": true,
@@ -273,6 +288,7 @@ python pipeline.py --seed-article "Fentanyl" --max-articles 150 --max-depth 3 --
 - `--disable-word-pruning`: desactiva la poda de la red textual
 - `--output-dir`: carpeta de salida
 - `--spacy-model`: modelo NLP a cargar
+- `--source-mode`: `auto`, `api` o `html`
 
 Consulta rapida:
 
@@ -321,6 +337,22 @@ El pipeline genera:
 - `data/links/links_nodes.csv`
 - `data/links/links_edges.csv`
 - `data/nodos_visitados.txt`
+
+## Compatibilidad de wikis
+
+Estado comprobado en fecha 4 de marzo de 2026:
+
+- Wikipedia (`es.wikipedia.org`): funciona via API (`/w/api.php`) y HTML
+- Bulbapedia: funciona via API (`/w/api.php`) y HTML
+- WikiDex: funciona via API (`/api.php`) y HTML
+- Fandom (One Piece, Warhammer, Harry Potter): HTML suele dar `403`, API (`/api.php`) suele funcionar
+- Coppermind ES: bloqueado con `403` tanto en HTML como en API desde este entorno
+
+Resumen practico:
+
+- para minimizar `403`, usa `--source-mode auto` o `--source-mode api`
+- si una wiki bloquea, el crawler la reporta como dominio no procesado
+- para wikis fuera de Wikipedia no hay garantia absoluta: depende de protecciones anti-bot, Cloudflare y politica del sitio
 
 ### Formato de la red textual
 
@@ -421,8 +453,10 @@ python src/top_modularity.py --csv data/words/words_metrics_nodes.csv --top-n 10
 La suite actual cubre:
 
 - configuracion del pipeline
+- carga de configuracion por CLI y por archivo JSON
+- seleccion de modo de obtencion `auto/api/html`
 - construccion de grafos y poda
-- filtrado de enlaces de Wikipedia
+- filtrado de enlaces en patrones de Wikipedia, Fandom, Bulbapedia, WikiDex y Coppermind
 - exportacion de CSV
 - limpieza de labels de enlaces
 

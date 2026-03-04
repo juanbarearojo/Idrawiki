@@ -14,6 +14,7 @@
   "min_request_delay": 1.0,
   "max_request_delay": 3.0,
   "spacy_model": "en_core_sci_md",
+  "source_mode": "auto",
   "enable_link_pruning": true,
   "enable_word_pruning": true,
   "output_dir": "data"
