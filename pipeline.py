@@ -1,50 +1,84 @@
 import argparse
+import json
 import sys
 from pathlib import Path
 
 from src.config import PipelineConfig
 
 
-def parse_args() -> argparse.Namespace:
+def load_config_file(config_path: str | Path | None) -> dict[str, object]:
+    if not config_path:
+        return {}
+
+    path = Path(config_path)
+    if not path.exists():
+        raise FileNotFoundError(f"No se encontro el archivo de configuracion: {path}")
+
+    with path.open(encoding="utf-8") as config_file:
+        loaded = json.load(config_file)
+
+    if not isinstance(loaded, dict):
+        raise ValueError("El archivo de configuracion debe contener un objeto JSON.")
+
+    valid_keys = PipelineConfig.field_names()
+    unknown_keys = set(loaded.keys()) - valid_keys
+    if unknown_keys:
+        raise ValueError(
+            "Claves no soportadas en el archivo de configuracion: "
+            + ", ".join(sorted(unknown_keys))
+        )
+
+    return loaded
+
+
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Scrapea Wikipedia y genera redes de palabras, bigramas y enlaces."
     )
-    parser.add_argument("--base-url", default="https://en.wikipedia.org")
-    parser.add_argument("--seed-article", default="Fentanyl")
-    parser.add_argument("--seed-url", help="URL completa del articulo inicial. Tiene prioridad.")
-    parser.add_argument("--max-articles", type=int, default=100)
-    parser.add_argument("--max-depth", type=int, default=100)
-    parser.add_argument("--min-link-freq", type=int, default=3)
-    parser.add_argument("--top-n-bigrams", type=int, default=150)
-    parser.add_argument("--edge-prune-percentile", type=int, default=45)
-    parser.add_argument("--node-prune-percentile", type=int, default=15)
-    parser.add_argument("--min-node-freq", type=int, default=5)
-    parser.add_argument("--min-edge-weight", type=int, default=5)
-    parser.add_argument("--spacy-model", default="en_core_sci_md")
-    parser.add_argument("--output-dir", default="data")
-    parser.add_argument("--disable-link-pruning", action="store_true")
-    parser.add_argument("--disable-word-pruning", action="store_true")
+    parser.add_argument("--config", default="pipeline_config.json")
+    parser.add_argument("--base-url", default=argparse.SUPPRESS)
+    parser.add_argument("--seed-article", default=argparse.SUPPRESS)
+    parser.add_argument("--seed-url", help="URL completa del articulo inicial. Tiene prioridad.", default=argparse.SUPPRESS)
+    parser.add_argument("--max-articles", type=int, default=argparse.SUPPRESS)
+    parser.add_argument("--max-depth", type=int, default=argparse.SUPPRESS)
+    parser.add_argument("--min-link-freq", type=int, default=argparse.SUPPRESS)
+    parser.add_argument("--top-n-bigrams", type=int, default=argparse.SUPPRESS)
+    parser.add_argument("--edge-prune-percentile", type=int, default=argparse.SUPPRESS)
+    parser.add_argument("--node-prune-percentile", type=int, default=argparse.SUPPRESS)
+    parser.add_argument("--min-node-freq", type=int, default=argparse.SUPPRESS)
+    parser.add_argument("--min-edge-weight", type=int, default=argparse.SUPPRESS)
+    parser.add_argument("--spacy-model", default=argparse.SUPPRESS)
+    parser.add_argument("--output-dir", default=argparse.SUPPRESS)
+    parser.add_argument("--disable-link-pruning", action="store_true", default=argparse.SUPPRESS)
+    parser.add_argument("--disable-word-pruning", action="store_true", default=argparse.SUPPRESS)
+    return parser
+
+
+def parse_args() -> argparse.Namespace:
+    parser = build_parser()
     return parser.parse_args()
 
 
 def build_config(args: argparse.Namespace) -> PipelineConfig:
-    return PipelineConfig(
-        base_url=args.base_url,
-        seed_article=args.seed_article,
-        seed_url=args.seed_url,
-        max_articles=args.max_articles,
-        max_depth=args.max_depth,
-        min_link_freq=args.min_link_freq,
-        top_n_bigrams=args.top_n_bigrams,
-        edge_prune_percentile=args.edge_prune_percentile,
-        node_prune_percentile=args.node_prune_percentile,
-        min_node_freq=args.min_node_freq,
-        min_edge_weight=args.min_edge_weight,
-        spacy_model=args.spacy_model,
-        enable_link_pruning=not args.disable_link_pruning,
-        enable_word_pruning=not args.disable_word_pruning,
-        output_dir=Path(args.output_dir),
-    )
+    default_config = PipelineConfig().to_dict()
+    file_config = load_config_file(getattr(args, "config", None))
+    merged_config = default_config | file_config
+
+    cli_values = vars(args).copy()
+    cli_values.pop("config", None)
+
+    if "disable_link_pruning" in cli_values:
+        cli_values["enable_link_pruning"] = not cli_values.pop("disable_link_pruning")
+    if "disable_word_pruning" in cli_values:
+        cli_values["enable_word_pruning"] = not cli_values.pop("disable_word_pruning")
+
+    if "output_dir" in merged_config:
+        merged_config["output_dir"] = Path(merged_config["output_dir"])
+    if "output_dir" in cli_values:
+        cli_values["output_dir"] = Path(cli_values["output_dir"])
+
+    merged_config.update(cli_values)
+    return PipelineConfig(**merged_config)
 
 
 def main() -> None:

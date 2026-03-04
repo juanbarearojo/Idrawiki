@@ -139,6 +139,13 @@ Importa primero nodos y luego aristas. Mas abajo tienes una guia especifica para
 
 ## Uso del pipeline
 
+La configuracion puede hacerse de dos maneras:
+
+- por linea de comandos
+- por archivo de configuracion JSON
+
+Si usas ambas a la vez, la linea de comandos tiene prioridad sobre el archivo.
+
 Ejemplo minimo:
 
 ```bash
@@ -154,6 +161,44 @@ Ejemplo equilibrado para una primera prueba:
 ```bash
 python pipeline.py --seed-article "Artificial intelligence" --max-articles 40 --max-depth 2 --min-link-freq 2 --edge-prune-percentile 35 --node-prune-percentile 10 --min-edge-weight 2 --min-node-freq 2
 ```
+
+### Configuracion por archivo
+
+El repo incluye un archivo base llamado `pipeline_config.json`.
+
+Puedes ejecutarlo directamente asi:
+
+```bash
+python pipeline.py --config pipeline_config.json
+```
+
+Ejemplo de contenido:
+
+```json
+{
+  "base_url": "https://es.wikipedia.org",
+  "seed_article": "Medicina",
+  "max_articles": 30,
+  "max_depth": 2,
+  "min_link_freq": 2,
+  "enable_link_pruning": true,
+  "enable_word_pruning": true,
+  "output_dir": "data"
+}
+```
+
+### Configuracion mixta: archivo + linea de comandos
+
+Tambien puedes cargar un archivo y sobrescribir solo algunos campos desde consola:
+
+```bash
+python pipeline.py --config pipeline_config.json --seed-article "Artificial intelligence" --max-articles 20
+```
+
+En ese caso:
+
+- el archivo aporta la configuracion base
+- la consola sobrescribe los valores que indiques
 
 ### Ejemplo en Wikipedia en espanol
 

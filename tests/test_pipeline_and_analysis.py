@@ -1,5 +1,6 @@
 import argparse
 import io
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -38,6 +39,18 @@ class PipelineEntryPointTests(unittest.TestCase):
         self.assertEqual(args.max_articles, 20)
         self.assertTrue(args.disable_link_pruning)
 
+    def test_parse_args_accepts_config_path(self) -> None:
+        test_argv = [
+            "pipeline.py",
+            "--config",
+            "custom_config.json",
+        ]
+
+        with patch("sys.argv", test_argv):
+            args = pipeline.parse_args()
+
+        self.assertEqual(args.config, "custom_config.json")
+
     def test_build_config_translates_cli_flags(self) -> None:
         args = argparse.Namespace(
             base_url="https://es.wikipedia.org",
@@ -55,6 +68,7 @@ class PipelineEntryPointTests(unittest.TestCase):
             output_dir="custom_output",
             disable_link_pruning=True,
             disable_word_pruning=False,
+            config=None,
         )
 
         config = pipeline.build_config(args)
@@ -65,6 +79,57 @@ class PipelineEntryPointTests(unittest.TestCase):
         self.assertFalse(config.enable_link_pruning)
         self.assertTrue(config.enable_word_pruning)
         self.assertEqual(config.spacy_model, "custom_model")
+
+    def test_build_config_loads_values_from_json_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            config_path = Path(tmp_dir) / "pipeline_config.json"
+            config_path.write_text(
+                json.dumps(
+                    {
+                        "base_url": "https://es.wikipedia.org",
+                        "seed_article": "Biologia",
+                        "max_articles": 12,
+                        "enable_link_pruning": False,
+                        "output_dir": "custom_data"
+                    }
+                ),
+                encoding="utf-8",
+            )
+            args = argparse.Namespace(config=str(config_path))
+
+            config = pipeline.build_config(args)
+
+        self.assertEqual(config.base_url, "https://es.wikipedia.org")
+        self.assertEqual(config.seed_article, "Biologia")
+        self.assertEqual(config.max_articles, 12)
+        self.assertFalse(config.enable_link_pruning)
+        self.assertEqual(config.output_dir, Path("custom_data"))
+
+    def test_cli_values_override_config_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            config_path = Path(tmp_dir) / "pipeline_config.json"
+            config_path.write_text(
+                json.dumps(
+                    {
+                        "seed_article": "Biologia",
+                        "max_articles": 12,
+                        "enable_word_pruning": True
+                    }
+                ),
+                encoding="utf-8",
+            )
+            args = argparse.Namespace(
+                config=str(config_path),
+                seed_article="Fisica",
+                max_articles=20,
+                disable_word_pruning=True,
+            )
+
+            config = pipeline.build_config(args)
+
+        self.assertEqual(config.seed_article, "Fisica")
+        self.assertEqual(config.max_articles, 20)
+        self.assertFalse(config.enable_word_pruning)
 
 
 class ExportVisitedArticlesTests(unittest.TestCase):

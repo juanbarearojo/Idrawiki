@@ -1,0 +1,20 @@
+{
+  "base_url": "https://en.wikipedia.org",
+  "seed_article": "Fentanyl",
+  "seed_url": null,
+  "max_articles": 100,
+  "max_depth": 100,
+  "min_link_freq": 3,
+  "top_n_bigrams": 150,
+  "edge_prune_percentile": 45,
+  "node_prune_percentile": 15,
+  "min_node_freq": 5,
+  "min_edge_weight": 5,
+  "request_timeout": 10,
+  "min_request_delay": 1.0,
+  "max_request_delay": 3.0,
+  "spacy_model": "en_core_sci_md",
+  "enable_link_pruning": true,
+  "enable_word_pruning": true,
+  "output_dir": "data"
+}

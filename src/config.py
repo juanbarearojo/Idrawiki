@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import asdict
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import quote, urlparse
@@ -57,3 +58,10 @@ class PipelineConfig:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.words_output_dir.mkdir(parents=True, exist_ok=True)
         self.links_output_dir.mkdir(parents=True, exist_ok=True)
+
+    def to_dict(self) -> dict[str, object]:
+        return asdict(self)
+
+    @classmethod
+    def field_names(cls) -> set[str]:
+        return set(cls.__dataclass_fields__.keys())
