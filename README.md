@@ -2,6 +2,8 @@
 
 Herramienta para rastrear Wikipedia a partir de un articulo base y generar redes de palabras, bigramas e hipervinculos listas para analizar en Gephi, Cytoscape u otros entornos.
 
+![Bueno, feo, malo](img/buenofeomalo.png)
+
 El proyecto ahora esta pensado para uso compartido en clase o en equipo:
 
 - permite elegir el nodo inicial de Wikipedia
@@ -90,6 +92,22 @@ python pipeline.py
 
 Eso arranca desde `https://en.wikipedia.org/wiki/Fentanyl`.
 
+### Ejemplo recomendado
+
+Ejemplo equilibrado para una primera prueba:
+
+```bash
+python pipeline.py --seed-article "Artificial intelligence" --max-articles 40 --max-depth 2 --min-link-freq 2 --edge-prune-percentile 35 --node-prune-percentile 10 --min-edge-weight 2 --min-node-freq 2
+```
+
+### Consejos rapidos
+
+- ✅ Empieza con `--max-articles` y `--max-depth` bajos para comprobar que el tema genera una red interpretable.
+- ⚠️ Si la red sale demasiado grande, Gephi puede volverse lento y la visualizacion pierde valor.
+- ✂️ En la mayoria de casos se recomienda mantener la poda activada para limpiar ruido y reducir el tamano del grafo.
+- 🧪 Si quieres comparar trabajos entre companeros, usad el mismo nodo base y los mismos parametros.
+- 💾 Guarda siempre el comando exacto con el que generaste los CSV.
+
 ### Elegir el nodo base
 
 Por titulo de articulo:
@@ -165,6 +183,28 @@ El pipeline genera:
 - `data/links/links_nodes.csv`
 - `data/links/links_edges.csv`
 - `data/nodos_visitados.txt`
+
+## Uso en Gephi
+
+Para que funcione bien en Gephi:
+
+1. Importa primero el archivo de nodos, por ejemplo `data/words/words_bigrams_nodes.csv`.
+2. Importa despues el archivo de aristas correspondiente, por ejemplo `data/words/words_bigrams_edges.csv`.
+3. En la importacion de aristas, usa `Source` y `Target` como identificadores.
+4. Para la red textual, trata el grafo como no dirigido en Gephi si quieres una visualizacion mas limpia.
+5. Para la red de enlaces, mantenlo dirigido.
+
+Configuraciones recomendadas en Gephi:
+
+- en `Appearance`, colorea por `Group` para separar `word`, `bigram` y `link`
+- en `Ranking`, usa `Attribute` o `Degree` para escalar el tamano de nodos
+- en `Layout`, prueba `ForceAtlas 2`
+- activa `Prevent Overlap` si los nodos se montan
+- si el grafo es enorme, aplica filtros por grado antes de visualizar
+
+Consejo:
+
+- ⚠️ Si importas una red muy grande sin poda, Gephi puede quedarse pesado o incluso bloquearse. En ese caso, vuelve a generar los CSV con poda o con menos articulos.
 
 ### Formato de la red textual
 
