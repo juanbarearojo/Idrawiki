@@ -2,14 +2,35 @@
 
 Herramienta para rastrear Wikipedia a partir de un articulo base y generar redes de palabras, bigramas e hipervinculos listas para analizar en Gephi, Cytoscape u otros entornos.
 
-![Bueno, feo, malo](img/buenofeomalo.png)
+![Hidra de Lerna](img/hidra-de-lerna.png)
 
-El proyecto ahora esta pensado para uso compartido en clase o en equipo:
+La idea del proyecto es sencilla: eliges un articulo inicial de Wikipedia, el pipeline recorre enlaces internos, limpia el texto, construye redes y exporta CSV que luego puedes visualizar.
+
+## Que hace esta herramienta
 
 - permite elegir el nodo inicial de Wikipedia
 - permite activar o desactivar la poda
-- separa scraping, procesamiento, construccion de grafos y exportacion en clases
-- deja scripts auxiliares con argumentos CLI en vez de rutas fijas
+- genera una red textual de palabras y bigramas
+- genera una red de enlaces entre articulos
+- exporta CSV faciles de abrir en Gephi
+- esta separada en clases para que sea mas facil de mantener y ampliar
+
+## Para quien esta pensada
+
+Este proyecto esta pensado para:
+
+- trabajos de clase
+- exploracion de temas en Wikipedia
+- comparacion entre conceptos o dominios
+- visualizacion de relaciones entre terminos y articulos
+
+## Flujo rapido de uso
+
+🐍 Elige un articulo base.  
+🐍 Ejecuta el pipeline con pocos articulos al principio.  
+🐍 Revisa los CSV generados.  
+🐍 Abre los nodos y aristas en Gephi.  
+🐍 Ajusta poda y repite hasta obtener una red legible.  
 
 ## Estructura
 
@@ -17,6 +38,11 @@ El proyecto ahora esta pensado para uso compartido en clase o en equipo:
 Idrawiki/
 |-- pipeline.py
 |-- requirements.txt
+|-- img/
+|   |-- hidra-de-lerna.png
+|   |-- texto.png
+|   |-- enalces.png
+|   `-- buenofeomalo.png
 |-- data/
 |   |-- links/
 |   |-- words/
@@ -82,6 +108,35 @@ pip install -r requirements.txt
 pip install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.0/en_core_sci_md-0.5.0.tar.gz
 ```
 
+## Empezar en 3 minutos
+
+### 1. Ejecuta una prueba pequena
+
+```bash
+python pipeline.py --seed-article "Artificial intelligence" --max-articles 25 --max-depth 2
+```
+
+Con esto validas rapido que:
+
+- el scraping funciona
+- el modelo carga bien
+- se generan CSV
+- la red no sale inmanejable
+
+### 2. Revisa la salida
+
+Al terminar deberias tener:
+
+- `data/words/words_bigrams_nodes.csv`
+- `data/words/words_bigrams_edges.csv`
+- `data/links/links_nodes.csv`
+- `data/links/links_edges.csv`
+- `data/nodos_visitados.txt`
+
+### 3. Abre Gephi y carga los CSV
+
+Importa primero nodos y luego aristas. Mas abajo tienes una guia especifica para Gephi.
+
 ## Uso del pipeline
 
 Ejemplo minimo:
@@ -100,13 +155,11 @@ Ejemplo equilibrado para una primera prueba:
 python pipeline.py --seed-article "Artificial intelligence" --max-articles 40 --max-depth 2 --min-link-freq 2 --edge-prune-percentile 35 --node-prune-percentile 10 --min-edge-weight 2 --min-node-freq 2
 ```
 
-### Consejos rapidos
+### Ejemplo en Wikipedia en espanol
 
-- ✅ Empieza con `--max-articles` y `--max-depth` bajos para comprobar que el tema genera una red interpretable.
-- ⚠️ Si la red sale demasiado grande, Gephi puede volverse lento y la visualizacion pierde valor.
-- ✂️ En la mayoria de casos se recomienda mantener la poda activada para limpiar ruido y reducir el tamano del grafo.
-- 🧪 Si quieres comparar trabajos entre companeros, usad el mismo nodo base y los mismos parametros.
-- 💾 Guarda siempre el comando exacto con el que generaste los CSV.
+```bash
+python pipeline.py --base-url "https://es.wikipedia.org" --seed-article "Medicina" --max-articles 30 --max-depth 2
+```
 
 ### Elegir el nodo base
 
@@ -148,6 +201,14 @@ Ajustar umbrales:
 python pipeline.py --seed-article "Fentanyl" --max-articles 150 --max-depth 3 --min-link-freq 2 --edge-prune-percentile 35 --node-prune-percentile 10 --min-edge-weight 3 --min-node-freq 3
 ```
 
+## Consejos rapidos
+
+- ✅ Empieza con `--max-articles` y `--max-depth` bajos para comprobar que el tema genera una red interpretable.
+- ✂️ En la mayoria de casos se recomienda mantener la poda activada para limpiar ruido y reducir el tamano del grafo.
+- 📉 Si la red sale demasiado grande, baja `--max-articles`, `--max-depth` o endurece la poda.
+- 💾 Guarda siempre el comando exacto con el que generaste los CSV.
+- 🧪 Si vais a comparar resultados entre companeros, usad el mismo nodo base y los mismos parametros.
+
 ## Parametros principales
 
 `pipeline.py` expone estos argumentos:
@@ -174,7 +235,39 @@ Consulta rapida:
 python pipeline.py --help
 ```
 
-## Salidas
+## Que tipos de redes salen
+
+### Red textual
+
+La red textual mezcla palabras individuales y bigramas detectados en los articulos rastreados.
+
+Sirve para:
+
+- detectar conceptos centrales
+- localizar terminos repetidos
+- ver agrupaciones tematicas
+- estudiar coocurrencias
+
+Ejemplo del tipo de visualizacion que puede salir:
+
+![Visualizacion de red textual](img/texto.png)
+
+### Red de enlaces
+
+La red de enlaces conecta articulos de Wikipedia entre si.
+
+Sirve para:
+
+- ver la estructura de navegacion entre paginas
+- detectar articulos puente
+- estudiar que temas quedan mas conectados
+- identificar hubs o nodos muy enlazados
+
+Ejemplo del tipo de visualizacion que puede salir:
+
+![Visualizacion de red de enlaces](img/enalces.png)
+
+## Salidas y formato
 
 El pipeline genera:
 
@@ -183,28 +276,6 @@ El pipeline genera:
 - `data/links/links_nodes.csv`
 - `data/links/links_edges.csv`
 - `data/nodos_visitados.txt`
-
-## Uso en Gephi
-
-Para que funcione bien en Gephi:
-
-1. Importa primero el archivo de nodos, por ejemplo `data/words/words_bigrams_nodes.csv`.
-2. Importa despues el archivo de aristas correspondiente, por ejemplo `data/words/words_bigrams_edges.csv`.
-3. En la importacion de aristas, usa `Source` y `Target` como identificadores.
-4. Para la red textual, trata el grafo como no dirigido en Gephi si quieres una visualizacion mas limpia.
-5. Para la red de enlaces, mantenlo dirigido.
-
-Configuraciones recomendadas en Gephi:
-
-- en `Appearance`, colorea por `Group` para separar `word`, `bigram` y `link`
-- en `Ranking`, usa `Attribute` o `Degree` para escalar el tamano de nodos
-- en `Layout`, prueba `ForceAtlas 2`
-- activa `Prevent Overlap` si los nodos se montan
-- si el grafo es enorme, aplica filtros por grado antes de visualizar
-
-Consejo:
-
-- ⚠️ Si importas una red muy grande sin poda, Gephi puede quedarse pesado o incluso bloquearse. En ese caso, vuelve a generar los CSV con poda o con menos articulos.
 
 ### Formato de la red textual
 
@@ -237,6 +308,48 @@ Aristas:
 - `Target`
 - `Type`
 - `Weight`
+
+## Uso en Gephi
+
+### Orden recomendado de importacion
+
+1. Importa primero el archivo de nodos, por ejemplo `data/words/words_bigrams_nodes.csv`.
+2. Importa despues el archivo de aristas correspondiente, por ejemplo `data/words/words_bigrams_edges.csv`.
+3. En la importacion de aristas, usa `Source` y `Target` como identificadores.
+4. Si estas trabajando con la red textual, tratala como no dirigida.
+5. Si estas trabajando con la red de enlaces, mantenla dirigida.
+
+### Ajustes utiles en Gephi
+
+- en `Appearance`, colorea por `Group`
+- en `Ranking`, usa `Attribute` o `Degree` para escalar nodos
+- en `Layout`, prueba `ForceAtlas 2`
+- activa `Prevent Overlap` si los nodos se montan
+- si el grafo es enorme, aplica filtros por grado antes de visualizar
+- para etiquetas, activa `Labels` solo al final para que no se vuelva lento
+
+### Configuracion minima para que funcione bien
+
+Para una primera visualizacion razonable:
+
+- Layout: `ForceAtlas 2`
+- Escalado de tamano: por `Degree`
+- Color: por `Group`
+- Filtro opcional: `Degree Range`
+- Etiquetas: mostrar solo cuando el layout ya este estabilizado
+
+## Advertencias
+
+![Bueno, feo y malo](img/buenofeomalo.png)
+
+- ⚠️ Si importas una red muy grande sin poda, Gephi puede quedarse pesado o incluso bloquearse.
+- ⚠️ Si el tema es muy amplio, Wikipedia puede arrastrar cientos de enlaces y la red crecer muy rapido.
+- ⚠️ Si cambias de idioma en Wikipedia, conviene cambiar tambien el modelo NLP para que el texto se procese mejor.
+- ⚠️ Si subes demasiado `--max-depth`, la red puede dejar de representar el tema inicial y volverse demasiado general.
+
+Recomendacion practica:
+
+- ✅ Para casi cualquier primera prueba, usa poda activa y `--max-depth 2`.
 
 ## Scripts auxiliares
 
@@ -277,6 +390,7 @@ python -m unittest discover -s tests -v
 ## Recomendaciones para uso en clase
 
 - usa `--max-depth` pequeno al principio para validar que el tema produce una red util
+- genera primero una red textual y luego una de enlaces para comparar enfoques
 - guarda el comando exacto que has lanzado junto con los CSV
 - si dos personas van a comparar resultados, fija los mismos parametros de poda
 - si quieres explorar una Wikipedia distinta, usa `--seed-url` o cambia `--base-url`
@@ -286,6 +400,7 @@ python -m unittest discover -s tests -v
 - el procesamiento textual esta orientado al ingles por el modelo `en_core_sci_md`
 - si cambias a otro idioma de Wikipedia, conviene cambiar tambien el modelo NLP
 - el scraping puede tardar bastante si `--max-articles` y `--max-depth` son altos
+- los resultados dependen bastante del nodo inicial y de la configuracion elegida
 
 ## Licencia
 
