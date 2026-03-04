@@ -1,23 +1,27 @@
+import argparse
+
 import pandas as pd
 
-# Definir el nombre del archivo de entrada y salida
-archivo_entrada = 'data/links/links_nodes.csv'
-archivo_salida = 'data/links/links_nodes_clean.csv'
 
-# Leer el archivo CSV
-# Se asume que el separador es una coma y que las comillas están correctamente manejadas
-df = pd.read_csv(archivo_entrada)
-
-
-
-# Procesar la columna 'Label':
-# 1. Eliminar las comillas dobles si existen
-# 2. Remover el prefijo 'https://en.wikipedia.org/wiki/'
-df['Label'] = df['Label'].str.replace('"', '', regex=False)
-df['Label'] = df['Label'].str.replace('https://en.wikipedia.org/wiki/', '', regex=False)
+def clean_labels(input_path: str, output_path: str, base_url: str) -> None:
+    df = pd.read_csv(input_path)
+    normalized_base = f"{base_url.rstrip('/')}/wiki/"
+    df["Label"] = df["Label"].str.replace('"', "", regex=False)
+    df["Label"] = df["Label"].str.replace(normalized_base, "", regex=False)
+    df.to_csv(output_path, index=False)
+    print(f"Archivo procesado guardado en '{output_path}'.")
 
 
-# Guardar el DataFrame procesado en un nuevo archivo CSV
-df.to_csv(archivo_salida, index=False)
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Limpia las labels del CSV de enlaces generado por el pipeline."
+    )
+    parser.add_argument("--input", default="data/links/links_nodes.csv")
+    parser.add_argument("--output", default="data/links/links_nodes_clean.csv")
+    parser.add_argument("--base-url", default="https://en.wikipedia.org")
+    return parser.parse_args()
 
-print(f"\nEl archivo procesado se ha guardado como '{archivo_salida}'.")
+
+if __name__ == "__main__":
+    args = parse_args()
+    clean_labels(args.input, args.output, args.base_url)

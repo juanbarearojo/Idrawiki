@@ -1,261 +1,252 @@
-# Wikipedia Scraper and Network Generator
+# Idrawiki
 
-## Table of Contents
-- [Overview](#overview)
-- [Features](#features)
-- [Installation](#installation)
-- [Usage](#usage)
-  - [Configuration](#configuration)
-- [Dependencies](#dependencies)
-- [Output](#output)
-- [How It Works](#how-it-works)
-- [Contributing](#contributing)
-- [License](#license)
-- [Contact](#contact)
+Herramienta para rastrear Wikipedia a partir de un articulo base y generar redes de palabras, bigramas e hipervinculos listas para analizar en Gephi, Cytoscape u otros entornos.
 
-## Overview
+El proyecto ahora esta pensado para uso compartido en clase o en equipo:
 
-The **Wikipedia Scraper and Network Generator** is a Python-based tool designed to crawl Wikipedia articles, extract meaningful textual data, and construct comprehensive networks of words, bigrams, and hyperlinks. By analyzing the co-occurrence of words and the structure of Wikipedia's internal links, this tool provides valuable insights into the relationships and significance of terms within a specific domain.
+- permite elegir el nodo inicial de Wikipedia
+- permite activar o desactivar la poda
+- separa scraping, procesamiento, construccion de grafos y exportacion en clases
+- deja scripts auxiliares con argumentos CLI en vez de rutas fijas
 
-## Repository Structure
+## Estructura
 
-The repository structure includes a `data/` directory where the results of the analysis are stored in CSV and TXT formats. These files are ready to be used or processed by other users. Below is a description of the contents:
-
-### Directory Structure
-
-- **`data/links_edges.csv`**: Contains the edges of the hyperlink network.
-- **`data/links_nodes.csv`**: Contains the nodes of the hyperlink network.
-- **`data/nodos_visitados.txt`**: A list of all the nodes (Wikipedia articles) visited during the scraping process.
-- **`data/words_bigrams_edges.csv`**: Contains the edges of the word and bigram network.
-- **`data/words_bigrams_nodes.csv`**: Contains the nodes of the word and bigram network.
-
-
-### Open Data
-
-All files in the `data/` directory are open for use. You can utilize them directly for additional analysis, data visualization, or any other task. Feel free to explore and contribute with new insights or improvements.
-
-
-## Features
-
-- **Web Scraping**: Efficiently crawls Wikipedia articles up to a specified depth and number of articles.
-- **Text Processing**: Cleans and processes textual content to extract significant words and bigrams while filtering out low-information verbs and stopwords.
-- **Entity Recognition**: Identifies and incorporates named entities from the text.
-- **Network Construction**: Builds co-occurrence networks of words and bigrams, as well as a directed graph of Wikipedia hyperlinks.
-- **Graph Pruning**: Applies statistical thresholds and minimum frequency/weight criteria to prune nodes and edges, ensuring meaningful and manageable network sizes.
-- **Data Export**: Exports the resulting networks into CSV files for further analysis or visualization.
-
-## Installation
-
-### Prerequisites
-
-- **Python 3.7 or higher**: Ensure you have Python installed. You can download it from the [official website](https://www.python.org/downloads/).
-
-### Clone the Repository
-
-```bash
-git clone https://github.com/tu-usuario/wikipedia-scraper-network-generator.git
-cd wikipedia-scraper-network-generator
+```text
+Idrawiki/
+|-- pipeline.py
+|-- requirements.txt
+|-- data/
+|   |-- links/
+|   |-- words/
+|   `-- nodos_visitados.txt
+`-- src/
+    |-- config.py
+    |-- wikipedia_crawler.py
+    |-- text_processing.py
+    |-- graph_builder.py
+    |-- exporter.py
+    |-- greedy_mod.py
+    |-- top_modularity.py
+    `-- clean_links_csv.py
 ```
 
-### Create a Virtual Environment (Optional but Recommended)
+## Arquitectura
+
+### `PipelineConfig`
+
+Centraliza la configuracion del pipeline: articulo inicial, URL base, limites de scraping, parametros de poda y rutas de salida.
+
+### `WikipediaTextProcessor`
+
+Carga el modelo de spaCy y se encarga de:
+
+- limpiar texto
+- extraer lemas y entidades
+- generar bigramas
+
+### `WikipediaCrawler`
+
+Hace el scraping con reintentos HTTP, recorre enlaces internos de Wikipedia y devuelve:
+
+- palabras por articulo
+- bigramas por articulo
+- red de enlaces
+- lista de articulos visitados
+
+### `GraphBuilder`
+
+Construye:
+
+- la red de palabras y bigramas
+- la red dirigida de hipervinculos
+
+Tambien aplica la poda si esta activada.
+
+### `GraphExporter`
+
+Exporta nodos, aristas y el listado de URLs visitadas.
+
+## Requisitos
+
+- Python 3.10 o superior recomendado
+- modelo `en_core_sci_md` instalado
+
+Instalacion base:
 
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-### Install Dependencies
-
-Install the required Python libraries using `pip`:
-
-```bash
+python -m venv .venv
+.venv\Scripts\activate
 pip install -r requirements.txt
-
-```
-
-### Download SciSpaCy Model
-
-The project utilizes the `en_core_sci_md` SciSpaCy model for advanced scientific text processing. Download and install the model using the following command:
-
-```bash
 pip install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.0/en_core_sci_md-0.5.0.tar.gz
 ```
 
-Alternatively, you can download other SciSpaCy models based on your requirements from the [SciSpaCy GitHub repository](https://github.com/allenai/scispacy).
+## Uso del pipeline
 
-## Usage
-
-### Running the Scraper
-
-Execute the main Python script to start the scraping and network generation process:
+Ejemplo minimo:
 
 ```bash
 python pipeline.py
 ```
 
-**Note**: Replace `scraper.py` with the actual filename of your Python script if different.
+Eso arranca desde `https://en.wikipedia.org/wiki/Fentanyl`.
 
-### Configuration
+### Elegir el nodo base
 
-The script allows you to configure various parameters to tailor the scraping and network generation process. These configurations are defined at the beginning of the script:
-
-```python
-# === Parámetros de Configuración ===
-MAX_ARTICLES = 100           # Número máximo de artículos a procesar
-MAX_DEPTH = 100              # Profundidad máxima de scraping
-MIN_LINK_FREQ = 3            # Frecuencia mínima para retener un enlace
-TOP_N_BIGRAMS = 150          # Número de bigramas más frecuentes a integrar
-EDGE_POD_PERCENTILE = 45     # Percentil para poda de aristas
-NODE_POD_PERCENTILE = 15     # Percentil para poda de nodos
-MIN_NODE_FREQ = 5            # Frecuencia mínima para retener un nodo
-MIN_EDGE_WEIGHT = 5          # Peso mínimo para retener una arista
-```
-
-You can adjust these parameters directly in the script to meet your specific needs:
-
-- `MAX_ARTICLES`: Maximum number of Wikipedia articles to process.
-- `MAX_DEPTH`: Maximum depth for crawling related articles.
-- `MIN_LINK_FREQ`: Minimum frequency for retaining a hyperlink.
-- `TOP_N_BIGRAMS`: Number of top bigrams to include in the network.
-- `EDGE_POD_PERCENTILE`: Percentile threshold for pruning edges.
-- `NODE_POD_PERCENTILE`: Percentile threshold for pruning nodes.
-- `MIN_NODE_FREQ`: Minimum frequency to retain a node.
-- `MIN_EDGE_WEIGHT`: Minimum weight to retain an edge.
-
-### Example
-
-To start scraping from the Wikipedia article on "Fentanyl" with default configurations:
+Por titulo de articulo:
 
 ```bash
-python scraper.py
+python pipeline.py --seed-article "Artificial intelligence"
 ```
 
-The script will output progress logs to the console and generate CSV files in the `data/` directory upon completion.
+Por URL completa:
 
-## Dependencies
+```bash
+python pipeline.py --seed-url "https://es.wikipedia.org/wiki/Inteligencia_artificial"
+```
 
-The project relies on the following Python libraries:
+Si usas otra Wikipedia, tambien puedes fijar la base:
 
-- **requests**: For making HTTP requests.
-- **BeautifulSoup4**: For parsing HTML content.
-- **spaCy**: For advanced natural language processing.
-- **SciSpaCy**: SciPy-based extensions for spaCy, specialized for scientific text.
-- **networkx**: For constructing and managing complex networks.
-- **numpy**: For numerical computations, especially statistical operations.
-- **nltk**: For natural language processing utilities.
-- **urllib3**: For handling URL operations.
-- **csv**: For reading and writing CSV files.
-- **re**: For regular expressions.
-- **time & random**: For managing delays between requests.
-- **os & sys**: For operating system interactions and system-specific parameters.
+```bash
+python pipeline.py --base-url "https://es.wikipedia.org" --seed-article "Medicina"
+```
 
-Ensure all dependencies are installed as per the [Installation](#installation) section.
+### Controlar la poda
 
-## Output
+Desactivar solo la poda de enlaces:
 
-Upon successful execution, the script generates several CSV files within the `data/` directory:
+```bash
+python pipeline.py --disable-link-pruning
+```
 
-### 1. Words and Bigrams Network
+Desactivar la poda de la red textual:
 
-- **`words_bigrams_nodes.csv`**: Contains all nodes (words and bigrams) with their attributes.
-  - **Columns**:
-    - `Id`: Unique identifier for the node.
-    - `Label`: The word or bigram.
-    - `Group`: Category (`word` or `bigram`).
-    - `Attribute`: Frequency count.
+```bash
+python pipeline.py --disable-word-pruning
+```
 
-- **`words_bigrams_edges.csv`**: Contains all edges between nodes with their attributes.
-  - **Columns**:
-    - `Source`: ID of the source node.
-    - `Target`: ID of the target node.
-    - `Type`: Type of connection (`Undirected`, `Contains`, `Co-occurs`).
-    - `Weight`: Weight of the edge representing frequency or co-occurrence strength.
+Ajustar umbrales:
 
-### 2. Hyperlinks Network
+```bash
+python pipeline.py --seed-article "Fentanyl" --max-articles 150 --max-depth 3 --min-link-freq 2 --edge-prune-percentile 35 --node-prune-percentile 10 --min-edge-weight 3 --min-node-freq 3
+```
 
-- **`links_nodes.csv`**: Contains all hyperlink nodes.
-  - **Columns**:
-    - `Id`: Unique identifier for the hyperlink node.
-    - `Label`: URL of the Wikipedia article.
-    - `Group`: Category (`link`).
-    - `Attribute`: Placeholder (default `0`).
+## Parametros principales
 
-- **`links_edges.csv`**: Contains all directed edges between hyperlink nodes.
-  - **Columns**:
-    - `Source`: ID of the source hyperlink node.
-    - `Target`: ID of the target hyperlink node.
-    - `Type`: Type of connection (`Directed`).
-    - `Weight`: Weight of the edge (default `1`).
+`pipeline.py` expone estos argumentos:
 
-### Data Visualization
+- `--base-url`: dominio base de Wikipedia
+- `--seed-article`: articulo inicial a partir del titulo
+- `--seed-url`: URL completa del articulo inicial
+- `--max-articles`: limite total de articulos rastreados
+- `--max-depth`: profundidad maxima del rastreo
+- `--min-link-freq`: frecuencia minima para conservar enlaces en la red de links
+- `--top-n-bigrams`: numero de bigramas integrados en la red textual
+- `--edge-prune-percentile`: percentil de poda de aristas
+- `--node-prune-percentile`: percentil de poda de nodos
+- `--min-node-freq`: frecuencia minima de nodo
+- `--min-edge-weight`: peso minimo de arista
+- `--disable-link-pruning`: desactiva la poda de enlaces
+- `--disable-word-pruning`: desactiva la poda de la red textual
+- `--output-dir`: carpeta de salida
+- `--spacy-model`: modelo NLP a cargar
 
-You can utilize these CSV files with network visualization tools such as [Gephi](https://gephi.org/) or [Cytoscape](https://cytoscape.org/) to visualize and analyze the networks.
+Consulta rapida:
 
-## How It Works
+```bash
+python pipeline.py --help
+```
 
-1. **Initialization**: The script initializes HTTP session settings with retry strategies to handle transient network issues gracefully.
+## Salidas
 
-2. **Model Loading**: It loads the SciSpaCy model (`en_core_sci_md`) for processing scientific text. If the model isn't found, it prompts the user to install it.
+El pipeline genera:
 
-3. **Crawling**:
-   - Starts from a specified Wikipedia article (default: "Fentanyl").
-   - Traverses linked Wikipedia articles up to the defined depth and article limit.
-   - Extracts textual content from paragraphs (`<p>` tags) of each article.
+- `data/words/words_bigrams_nodes.csv`
+- `data/words/words_bigrams_edges.csv`
+- `data/links/links_nodes.csv`
+- `data/links/links_edges.csv`
+- `data/nodos_visitados.txt`
 
-4. **Text Processing**:
-   - Cleans the extracted text by converting it to lowercase and removing non-alphabetic characters.
-   - Tokenizes the text and filters out stopwords and low-information verbs.
-   - Identifies and extracts named entities.
-   - Generates bigrams from the most frequent words.
+### Formato de la red textual
 
-5. **Network Construction**:
-   - **Words and Bigrams Network**: Builds a co-occurrence network where nodes represent words and bigrams, and edges represent their co-occurrence within a sliding window.
-   - **Hyperlinks Network**: Constructs a directed graph where nodes are Wikipedia articles and edges represent hyperlinks between them.
+Nodos:
 
-6. **Pruning**:
-   - Applies statistical thresholds (percentiles) and minimum frequency/weight criteria to prune less significant nodes and edges, ensuring the network remains focused and manageable.
+- `Id`
+- `Label`
+- `Group`
+- `Attribute`
 
-7. **Exporting**:
-   - Outputs the resulting networks into CSV files for further analysis or visualization.
+Aristas:
 
-## Contributing
+- `Source`
+- `Target`
+- `Type`
+- `Weight`
 
-Contributions are welcome! If you have suggestions for improvements, bug fixes, or new features, feel free to open an issue or submit a pull request.
+### Formato de la red de enlaces
 
-### Steps to Contribute
+Nodos:
 
-1. **Fork the Repository**: Click the "Fork" button at the top right of this page.
+- `Id`
+- `Label`
+- `Group`
+- `Attribute`
 
-2. **Clone Your Fork**:
+Aristas:
 
-   ```bash
-   git clone https://github.com/tu-usuario/wikipedia-scraper-network-generator.git
-   cd wikipedia-scraper-network-generator
-   ```
+- `Source`
+- `Target`
+- `Type`
+- `Weight`
 
-3. **Create a New Branch**:
+## Scripts auxiliares
 
-   ```bash
-   git checkout -b feature/nueva-funcionalidad
-   ```
+### Limpiar labels de enlaces
 
-4. **Make Your Changes**: Implement your features or fixes.
+```bash
+python src/clean_links_csv.py --input data/links/links_nodes.csv --output data/links/links_nodes_clean.csv --base-url https://es.wikipedia.org
+```
 
-5. **Commit Your Changes**:
+### Calcular comunidades con modularidad codiciosa
 
-   ```bash
-   git commit -m "Descripción de los cambios realizados"
-   ```
+```bash
+python src/greedy_mod.py --nodes data/words/words_bigrams_nodes.csv --edges data/words/words_bigrams_edges.csv
+```
 
-6. **Push to Your Fork**:
+### Resumir comunidades desde un CSV con metricas
 
-   ```bash
-   git push origin feature/nueva-funcionalidad
-   ```
+```bash
+python src/top_modularity.py --csv data/words/words_metrics_nodes.csv --top-n 10
+```
 
-7. **Open a Pull Request**: Navigate to the original repository and open a pull request from your fork.
+## Tests
 
-## License
+La suite actual cubre:
 
-Este proyecto está licenciado bajo la Licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más detalles.
+- configuracion del pipeline
+- construccion de grafos y poda
+- filtrado de enlaces de Wikipedia
+- exportacion de CSV
+- limpieza de labels de enlaces
 
+Ejecucion:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+## Recomendaciones para uso en clase
+
+- usa `--max-depth` pequeno al principio para validar que el tema produce una red util
+- guarda el comando exacto que has lanzado junto con los CSV
+- si dos personas van a comparar resultados, fija los mismos parametros de poda
+- si quieres explorar una Wikipedia distinta, usa `--seed-url` o cambia `--base-url`
+
+## Limitaciones actuales
+
+- el procesamiento textual esta orientado al ingles por el modelo `en_core_sci_md`
+- si cambias a otro idioma de Wikipedia, conviene cambiar tambien el modelo NLP
+- el scraping puede tardar bastante si `--max-articles` y `--max-depth` son altos
+
+## Licencia
+
+MIT. Ver [LICENSE](LICENSE).

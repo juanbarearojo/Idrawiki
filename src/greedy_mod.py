@@ -1,72 +1,60 @@
-import pandas as pd
+import argparse
+
 import networkx as nx
+import pandas as pd
 from networkx.algorithms.community import greedy_modularity_communities
 
-def cargar_datos(nodos_path, aristas_path):
-    """
-    Carga los datos de nodos y aristas desde archivos CSV.
-    """
+
+def cargar_datos(nodos_path: str, aristas_path: str) -> tuple[pd.DataFrame, pd.DataFrame]:
     nodos_df = pd.read_csv(nodos_path)
     aristas_df = pd.read_csv(aristas_path)
     return nodos_df, aristas_df
 
-def construir_grafo(nodos_df, aristas_df):
-    """
-    Construye un grafo no dirigido a partir de los DataFrames de nodos y aristas.
-    """
-    G = nx.Graph()
-    
-    # Añadir nodos con sus atributos
-    for _, row in nodos_df.iterrows():
-        G.add_node(row['Id'], label=row['Label'], group=row['Group'], attribute=row['Attribute'])
-    
-    # Añadir aristas con sus atributos
-    for _, row in aristas_df.iterrows():
-        G.add_edge(row['Source'], row['Target'], type=row['Type'], weight=row['Weight'])
-    
-    return G
 
-def aplicar_modularidad_codiciosa(G):
-    """
-    Aplica el algoritmo de modularidad codiciosa para detectar comunidades.
-    """
-    comunidades = greedy_modularity_communities(G)
-    
-    # Convertir a una lista de listas para mostrar fácilmente las comunidades
+def construir_grafo(nodos_df: pd.DataFrame, aristas_df: pd.DataFrame) -> nx.Graph:
+    grafo = nx.Graph()
+    for _, row in nodos_df.iterrows():
+        grafo.add_node(row["Id"], label=row["Label"], group=row["Group"], attribute=row["Attribute"])
+    for _, row in aristas_df.iterrows():
+        grafo.add_edge(row["Source"], row["Target"], type=row["Type"], weight=row["Weight"])
+    return grafo
+
+
+def aplicar_modularidad_codiciosa(grafo: nx.Graph) -> tuple[list[list[int]], float]:
+    comunidades = greedy_modularity_communities(grafo)
     comunidades_lista = [list(comunidad) for comunidad in comunidades]
-    
-    # Calcular la modularidad de la partición
-    modularidad = nx.algorithms.community.quality.modularity(G, comunidades)
-    
+    modularidad = nx.algorithms.community.quality.modularity(grafo, comunidades)
     return comunidades_lista, modularidad
 
-def main():
-    # Rutas a los archivos CSV
-    nodos_path = 'data/words/words_bigrams_nodes.csv'
-    aristas_path = 'data/words/words_bigrams_edges.csv'
-    
-    # Cargar datos
-    nodos_df, aristas_df = cargar_datos(nodos_path, aristas_path)
-    
-    # Construir el grafo
-    G = construir_grafo(nodos_df, aristas_df)
-    
-    # Verificar si el grafo tiene al menos una arista
-    if G.number_of_edges() == 0:
-        print("El grafo no tiene aristas. No se puede aplicar la detección de comunidades.")
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Aplica modularidad codiciosa sobre un grafo exportado por el pipeline."
+    )
+    parser.add_argument("--nodes", default="data/words/words_bigrams_nodes.csv")
+    parser.add_argument("--edges", default="data/words/words_bigrams_edges.csv")
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    nodos_df, aristas_df = cargar_datos(args.nodes, args.edges)
+    grafo = construir_grafo(nodos_df, aristas_df)
+
+    if grafo.number_of_edges() == 0:
+        print("El grafo no tiene aristas. No se puede aplicar la deteccion de comunidades.")
         return
-    
-    # Aplicar el algoritmo de modularidad codiciosa
+
     print("Aplicando el algoritmo de modularidad codiciosa...\n")
-    comunidades, modularidad = aplicar_modularidad_codiciosa(G)
-    
-    # Mostrar resultados
+    comunidades, modularidad = aplicar_modularidad_codiciosa(grafo)
+
     print("=== Resultados Finales ===")
     print(f"Mejor modularidad: {modularidad:.4f}")
-    print(f"Número de comunidades: {len(comunidades)}")
+    print(f"Numero de comunidades: {len(comunidades)}")
     print("\nComunidades detectadas:")
-    for i, comunidad in enumerate(comunidades):
-        print(f" - Comunidad {i+1}: {len(comunidad)} nodos")
+    for index, comunidad in enumerate(comunidades, start=1):
+        print(f" - Comunidad {index}: {len(comunidad)} nodos")
+
 
 if __name__ == "__main__":
     main()
