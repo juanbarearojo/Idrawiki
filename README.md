@@ -387,7 +387,7 @@ Ejecucion:
 python -m unittest discover -s tests -v
 ```
 
-## Recomendaciones para uso en clase
+## Recomendaciones para uso
 
 - usa `--max-depth` pequeno al principio para validar que el tema produce una red util
 - genera primero una red textual y luego una de enlaces para comparar enfoques
